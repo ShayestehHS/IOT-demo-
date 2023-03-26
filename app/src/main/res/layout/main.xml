@@ -1,39 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
     android:padding="16dp">
-    <Button
-        android:id="@+id/recognize_file"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/recognize_file"/>
 
     <Button
         android:id="@+id/recognize_mic"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/recognize_microphone"/>
+        android:text="@string/recognize_microphone" />
 
     <ToggleButton
         android:id="@+id/pause"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textOff="@string/pause"
-        android:textOn="@string/continueRecognition"/>
+        android:textOn="@string/continueRecognition" />
 
-    <TextView
-        android:id="@+id/lamp_text"
-        android:layout_width="wrap_content"
+    <Switch
+        android:id="@+id/lampSwitch"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Lamp status is:" />
-
-    <TextView
-        android:id="@+id/lamp_status"
-        android:layout_width="76dp"
-        android:layout_height="wrap_content"
-        android:text="Off" />
+        android:text="@string/lampSwitchText"
+        android:checked="false"
+        tools:ignore="UseSwitchCompatOrMaterialXml" />
 
     <TextView
         android:id="@+id/result_text"

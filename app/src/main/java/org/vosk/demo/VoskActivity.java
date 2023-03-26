@@ -1,12 +1,13 @@
 package org.vosk.demo;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.widget.Button;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
@@ -20,7 +21,6 @@ import org.vosk.android.SpeechStreamService;
 import org.vosk.android.StorageService;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -37,6 +37,8 @@ public class VoskActivity extends Activity implements RecognitionListener {
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    private Switch lampSwitch;
     private Model model;
     private SpeechService speechService;
     private SpeechStreamService speechStreamService;
@@ -48,14 +50,20 @@ public class VoskActivity extends Activity implements RecognitionListener {
         super.onCreate(state);
         setContentView(R.layout.main);
 
-        lamp = new Lamp(findViewById(R.id.lamp_status));
-        // Setup layout
+        lamp = new Lamp();
         resultView = findViewById(R.id.result_text);
+        lampSwitch = findViewById(R.id.lampSwitch);
         setUiState(STATE_START);
 
-        findViewById(R.id.recognize_file).setOnClickListener(view -> recognizeFile());
         findViewById(R.id.recognize_mic).setOnClickListener(view -> recognizeMicrophone());
         ((ToggleButton) findViewById(R.id.pause)).setOnCheckedChangeListener((view, isChecked) -> pause(isChecked));
+        lampSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                lamp.turn_on();
+            } else {
+                lamp.turn_off();
+            }
+        });
 
         LibVosk.setLogLevel(LogLevel.INFO);
 
@@ -111,9 +119,9 @@ public class VoskActivity extends Activity implements RecognitionListener {
         if (hypothesis.length() > 17) {
             resultView.append(hypothesis + "\n");
             if (hypothesis.contains("turn on")) {
-                lamp.turn_on();
+                lampSwitch.setChecked(true);
             } else if (hypothesis.contains("turn off")) {
-                lamp.turn_off();
+                lampSwitch.setChecked(false);
             }
         }
     }
@@ -145,36 +153,29 @@ public class VoskActivity extends Activity implements RecognitionListener {
             case STATE_START:
                 resultView.setText(R.string.preparing);
                 resultView.setMovementMethod(new ScrollingMovementMethod());
-                findViewById(R.id.recognize_file).setEnabled(false);
                 findViewById(R.id.recognize_mic).setEnabled(false);
                 findViewById(R.id.pause).setEnabled((false));
                 break;
             case STATE_READY:
                 resultView.setText(R.string.ready);
                 ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-                findViewById(R.id.recognize_file).setEnabled(true);
                 findViewById(R.id.recognize_mic).setEnabled(true);
                 findViewById(R.id.pause).setEnabled((false));
                 break;
             case STATE_DONE:
-                ((Button) findViewById(R.id.recognize_file)).setText(R.string.recognize_file);
                 ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-                findViewById(R.id.recognize_file).setEnabled(true);
                 findViewById(R.id.recognize_mic).setEnabled(true);
                 findViewById(R.id.pause).setEnabled((false));
                 ((ToggleButton) findViewById(R.id.pause)).setChecked(false);
                 break;
             case STATE_FILE:
-                ((Button) findViewById(R.id.recognize_file)).setText(R.string.stop_file);
                 resultView.setText(getString(R.string.starting));
                 findViewById(R.id.recognize_mic).setEnabled(false);
-                findViewById(R.id.recognize_file).setEnabled(true);
                 findViewById(R.id.pause).setEnabled((false));
                 break;
             case STATE_MIC:
                 ((Button) findViewById(R.id.recognize_mic)).setText(R.string.stop_microphone);
                 resultView.setText(getString(R.string.say_something));
-                findViewById(R.id.recognize_file).setEnabled(false);
                 findViewById(R.id.recognize_mic).setEnabled(true);
                 findViewById(R.id.pause).setEnabled((true));
                 break;
@@ -186,31 +187,7 @@ public class VoskActivity extends Activity implements RecognitionListener {
     private void setErrorState(String message) {
         resultView.setText(message);
         ((Button) findViewById(R.id.recognize_mic)).setText(R.string.recognize_microphone);
-        findViewById(R.id.recognize_file).setEnabled(false);
         findViewById(R.id.recognize_mic).setEnabled(false);
-    }
-
-    private void recognizeFile() {
-        if (speechStreamService != null) {
-            setUiState(STATE_DONE);
-            speechStreamService.stop();
-            speechStreamService = null;
-        } else {
-            setUiState(STATE_FILE);
-            try {
-                Recognizer rec = new Recognizer(model, 16000.f, "[\"one zero zero zero one\", " +
-                        "\"oh zero one two three four five six seven eight nine\", \"[unk]\"]");
-
-                InputStream ais = getAssets().open(
-                        "10001-90210-01803.wav");
-                if (ais.skip(44) != 44) throw new IOException("File too short");
-
-                speechStreamService = new SpeechStreamService(rec, ais, 16000);
-                speechStreamService.start(this);
-            } catch (IOException e) {
-                setErrorState(e.getMessage());
-            }
-        }
     }
 
     private void recognizeMicrophone() {
