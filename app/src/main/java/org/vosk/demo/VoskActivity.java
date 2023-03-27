@@ -213,5 +213,4 @@ public class VoskActivity extends Activity implements RecognitionListener {
             speechService.setPause(checked);
         }
     }
-
 }
