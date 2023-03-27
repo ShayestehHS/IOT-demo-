@@ -6,9 +6,13 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import org.vosk.LibVosk;
@@ -21,6 +25,7 @@ import org.vosk.android.SpeechStreamService;
 import org.vosk.android.StorageService;
 
 import java.io.IOException;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -36,6 +41,8 @@ public class VoskActivity extends Activity implements RecognitionListener {
 
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
+    public static final int PERMISSIONS_REQUEST_BLUETOOTH_CONNECT = 2;
+    public static final int PERMISSIONS_REQUEST_BLUETOOTH_SCAN = 3;
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     private Switch lampSwitch;
@@ -43,7 +50,10 @@ public class VoskActivity extends Activity implements RecognitionListener {
     private SpeechService speechService;
     private SpeechStreamService speechStreamService;
     private TextView resultView;
+    private ListView listView;
     private Lamp lamp;
+    private Bluetooth bluetooth;
+
 
     @Override
     public void onCreate(Bundle state) {
@@ -53,30 +63,38 @@ public class VoskActivity extends Activity implements RecognitionListener {
         lamp = new Lamp();
         resultView = findViewById(R.id.result_text);
         lampSwitch = findViewById(R.id.lampSwitch);
+        listView = findViewById(R.id.listView);
         setUiState(STATE_START);
 
+        findViewById(R.id.discover).setOnClickListener(view -> startDiscover());
         findViewById(R.id.recognize_mic).setOnClickListener(view -> recognizeMicrophone());
         ((ToggleButton) findViewById(R.id.pause)).setOnCheckedChangeListener((view, isChecked) -> pause(isChecked));
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            DeviceInfoModel selectedDevice = (DeviceInfoModel) parent.getItemAtPosition(position);
+            String macAddress = selectedDevice.getMacAddress();
+            String data =((EditText) findViewById(R.id.editTextData)).getText().toString();
+
+            this.bluetooth.sendData(macAddress, data);
+        });
         lampSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                lamp.turn_on();
-            } else {
-                lamp.turn_off();
-            }
+            if (isChecked) lamp.turn_on();
+            else lamp.turn_off();
         });
 
         LibVosk.setLogLevel(LogLevel.INFO);
+        initBluetooth();
+        initModel();
+    }
 
-        // Check if user has given permission to record audio, init the model after permission is granted
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-        } else {
-            initModel();
-        }
+    private void initBluetooth() {
+        this.bluetooth = new Bluetooth(this, this);
     }
 
     private void initModel() {
+        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
+        }
         StorageService.unpack(this, "model-en-us", "model",
                 (model) -> {
                     this.model = model;
@@ -88,13 +106,16 @@ public class VoskActivity extends Activity implements RecognitionListener {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         if (requestCode == PERMISSIONS_REQUEST_RECORD_AUDIO) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Recognizer initialization is a time-consuming and it involves IO,
-                // so we execute it in async task
-                initModel();
-            } else {
+            if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Record audio permission denied, closing application", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+        if (requestCode == PERMISSIONS_REQUEST_BLUETOOTH_CONNECT || requestCode == PERMISSIONS_REQUEST_BLUETOOTH_SCAN) {
+            if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                // Bluetooth permission denied, close the activity
+                Toast.makeText(this, "Bluetooth permission denied, closing application", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
@@ -207,10 +228,27 @@ public class VoskActivity extends Activity implements RecognitionListener {
         }
     }
 
-
     private void pause(boolean checked) {
         if (speechService != null) {
             speechService.setPause(checked);
         }
     }
+
+
+    private void connectToPairedDevice() {
+
+    }
+
+    private void startDiscover() {
+        Button discover = findViewById(R.id.discover);
+        discover.setEnabled(false);
+
+        List<DeviceInfoModel> pairedDevices = this.bluetooth.getAllPaired();
+        if (pairedDevices.size() == 0)
+            pairedDevices.add(new DeviceInfoModel("Nothing found", null));
+        listView.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pairedDevices));
+
+        discover.setEnabled(true);
+    }
+
 }

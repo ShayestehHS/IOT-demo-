@@ -19,13 +19,34 @@
         android:textOff="@string/pause"
         android:textOn="@string/continueRecognition" />
 
+    <Button
+        android:id="@+id/discover"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/discover" />
+
+    <EditText
+        android:id="@+id/editTextData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="text"
+        android:autofillHints="Add your command"
+        tools:ignore="LabelFor" />
+
     <Switch
         android:id="@+id/lampSwitch"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/lampSwitchText"
+        android:layout_height="54dp"
         android:checked="false"
+        android:text="@string/lampSwitchText"
         tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/result_text"

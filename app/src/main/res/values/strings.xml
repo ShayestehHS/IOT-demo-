@@ -12,6 +12,7 @@
     <string name="say_something">Say something\n</string>
     <string name="stop_file">Stop File</string>
     <string name="pause">Pause</string>
+    <string name="discover">Discover</string>
     <string name="continueRecognition">Continue</string>
     <string name="turn_on">Tap to turn on</string>
     <string name="turn_off">Tap to turn off</string>
