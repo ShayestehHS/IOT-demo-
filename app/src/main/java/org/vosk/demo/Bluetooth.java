@@ -26,6 +26,11 @@ public class Bluetooth {
     private final BluetoothAdapter bluetoothAdapter;
     private final Context context;
     private final Activity activity;
+    private String macAddress;
+
+    public void setMacAddress(String macAddress) {
+        this.macAddress = macAddress;
+    }
 
     public Bluetooth(Context context, Activity activity) {
         this.context = context;
@@ -68,17 +73,20 @@ public class Bluetooth {
         return deviceList;
     }
 
-    public void sendData(String macAddress, String data) {
+    public void sendData(String data) {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
+        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(this.macAddress);
         this.checkPermission();
-        try (BluetoothSocket socket = device.createRfcommSocketToServiceRecord(UUID.randomUUID())) {
+        try {
+            BluetoothSocket socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
             socket.connect();
 
             OutputStream outputStream = socket.getOutputStream();
             byte[] bytesData = data.getBytes();
             outputStream.write(bytesData);
             outputStream.flush();
+
+            socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -51,7 +51,6 @@ public class VoskActivity extends Activity implements RecognitionListener {
     private SpeechStreamService speechStreamService;
     private TextView resultView;
     private ListView listView;
-    private Lamp lamp;
     private Bluetooth bluetooth;
 
 
@@ -60,7 +59,6 @@ public class VoskActivity extends Activity implements RecognitionListener {
         super.onCreate(state);
         setContentView(R.layout.main);
 
-        lamp = new Lamp();
         resultView = findViewById(R.id.result_text);
         lampSwitch = findViewById(R.id.lampSwitch);
         listView = findViewById(R.id.listView);
@@ -72,13 +70,12 @@ public class VoskActivity extends Activity implements RecognitionListener {
         listView.setOnItemClickListener((parent, view, position, id) -> {
             DeviceInfoModel selectedDevice = (DeviceInfoModel) parent.getItemAtPosition(position);
             String macAddress = selectedDevice.getMacAddress();
-            String data =((EditText) findViewById(R.id.editTextData)).getText().toString();
 
-            this.bluetooth.sendData(macAddress, data);
+            this.bluetooth.setMacAddress(macAddress);
         });
         lampSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) lamp.turn_on();
-            else lamp.turn_off();
+            if (isChecked) bluetooth.sendData("1");
+            else bluetooth.sendData("0");
         });
 
         LibVosk.setLogLevel(LogLevel.INFO);
@@ -234,11 +231,6 @@ public class VoskActivity extends Activity implements RecognitionListener {
         }
     }
 
-
-    private void connectToPairedDevice() {
-
-    }
-
     private void startDiscover() {
         Button discover = findViewById(R.id.discover);
         discover.setEnabled(false);
@@ -250,5 +242,4 @@ public class VoskActivity extends Activity implements RecognitionListener {
 
         discover.setEnabled(true);
     }
-
 }
